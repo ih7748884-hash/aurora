@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c1722">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Aurora IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f7f6;--surface:#ffffff;--ink:#12263a;--muted:#55707f;--line:#cfe0dd;--accent:#0f8f8a;--accent-ink:#ffffff;--soft:#e2f2ef;--glow:#7a5cff;--me:#12263a;--me-ink:#ffffff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1722;--surface:#122434;--ink:#e8f4f2;--muted:#8fb0b6;--line:#1f3a4d;--accent:#46d6c4;--accent-ink:#06211f;--soft:#163247;--glow:#a28bff;--me:#46d6c4;--me-ink:#06211f}}
+html{height:100%}
+*{box-sizing:border-box}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;max-width:720px;margin-inline:auto}
+header{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line)}
+h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:26px;line-height:1.1;margin:0}
+.st{color:var(--muted);font-size:14px}
+.orb{width:48px;height:48px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff,var(--accent) 45%,var(--glow));box-shadow:0 0 0 3px var(--soft),0 0 18px var(--accent)}
+.orb.listen{animation:pulse 1.1s ease-in-out infinite}
+.orb.think{animation:spin 1.4s linear infinite;box-shadow:0 0 0 3px var(--glow),0 0 22px var(--glow)}
+.orb.speak{animation:pulse .7s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.12)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.orb{animation:none!important}}
+.sp{flex:1}
+.tg{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+#log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:85%;padding:10px 14px;border-radius:18px;white-space:pre-wrap;word-break:break-word}
+.m.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
+.m.me{align-self:flex-end;background:var(--me);color:var(--me-ink);border-bottom-right-radius:6px}
+.setup{margin:12px 16px 0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.setup p{margin:0 0 8px;font-size:14px;color:var(--muted)}
+.setup a{color:var(--accent);font-weight:600}
+.setup .r{display:flex;gap:8px}
+.setup input{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.msg{color:var(--muted);font-size:14px;padding:0 16px;min-height:1.2em}
+form{display:flex;gap:8px;align-items:flex-end;padding:10px 12px 12px;border-top:1px solid var(--line)}
+textarea{flex:1;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:10px 14px;resize:none;max-height:120px;min-width:0}
+button{font:inherit;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:10px 16px;cursor:pointer}
+button.main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button[aria-pressed="true"]{background:var(--glow);color:#fff;border-color:var(--glow)}
+button:disabled{opacity:.55}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lk{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <div class="orb" id="orb" aria-hidden="true"></div>
+  <div><h1>Aurora</h1><div class="st" id="st">Lista</div></div>
+  <div class="sp"></div>
+  <label class="tg"><input type="checkbox" id="spk" checked> Voz</label>
+</header>
+
+<div class="setup" id="setup" hidden>
+  <p>Para que Aurora responda, pega tu clave de API de Anthropic. Se guarda solo en este teléfono y nunca se comparte. Puedes crearla en <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+  <div class="r">
+    <input type="password" id="key" placeholder="sk-ant-..." aria-label="Clave de API" autocomplete="off">
+    <button class="main" id="saveKey" type="button">Guardar</button>
+  </div>
+</div>
+
+<div id="log" aria-live="polite"></div>
+<div class="msg" id="msg" role="status"></div>
+<form id="f">
+  <button type="button" id="mic" aria-pressed="false" aria-label="Hablar">Hablar</button>
+  <textarea id="in" rows="1" placeholder="Pregúntale algo a Aurora" aria-label="Mensaje"></textarea>
+  <button class="main" type="submit" id="send">Enviar</button>
+</form>
+<div class="msg" style="padding-bottom:8px"><button class="lk" id="chg" type="button">Cambiar clave de API</button></div>
+
+<script>
+const MODEL="claude-sonnet-5-5";
+const INSTR="Eres Aurora, una asistente personal de IA que vive en el celular de la persona. Responde en el idioma en que te escriban (por defecto español), con calidez y claridad. Tus respuestas se leerán en una pantalla pequeña y también se escucharán en voz alta, así que sé breve y natural: sin markdown, sin tablas y sin listas largas. No tienes acceso a internet ni a información en tiempo real, y no puedes abrir apps, llamar, enviar mensajes ni controlar el teléfono; si te lo piden, dilo con claridad y ofrece otra forma de ayudar (explicar los pasos, redactar el mensaje, hacer un recordatorio por escrito).";
+const $=s=>document.querySelector(s);
+let key="",busy=false,listening=false,speaking=false,voiceTurn=false,base="",rec=null;
+const hist=[];
+try{key=localStorage.getItem("aurora_key")||""}catch(e){}
+if(!key)$("#setup").hidden=false;
+
+function add(who,text){
+  const d=document.createElement("div");
+  d.className="m "+who;d.textContent=text;
+  $("#log").append(d);scroll();return d;
+}
+function scroll(){const l=$("#log");l.scrollTop=l.scrollHeight}
+function orb(){
+  const s=listening?"listen":busy?"think":speaking?"speak":"";
+  $("#orb").className="orb "+s;
+  $("#st").textContent=listening?"Escuchando…":busy?"Pensando…":speaking?"Hablando…":"Lista";
+}
+const say=t=>{$("#msg").textContent=t||""};
+add("ai","Hola, soy Aurora. Háblame con el botón o escríbeme lo que necesites.");
+
+$("#saveKey").onclick=()=>{
+  const k=$("#key").value.trim();
+  if(!k)return;
+  key=k;try{localStorage.setItem("aurora_key",k)}catch(e){}
+  $("#key").value="";$("#setup").hidden=true;say("Clave guardada.");
+};
+$("#chg").onclick=()=>{$("#setup").hidden=false;$("#key").focus()};
+
+/* Voz a texto (Chrome en Android y otros navegadores compatibles) */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){$("#mic").hidden=true}
+else{
+  rec=new SR();rec.lang="es-ES";rec.interimResults=true;rec.continuous=false;
+  rec.onresult=e=>{
+    let t="";
+    for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;
+    $("#in").value=base+t;
+  };
+  rec.onstart=()=>{listening=true;$("#mic").setAttribute("aria-pressed","true");$("#mic").textContent="Parar";orb()};
+  rec.onend=()=>{
+    listening=false;$("#mic").setAttribute("aria-pressed","false");$("#mic").textContent="Hablar";orb();
+    if(voiceTurn){voiceTurn=false;if($("#in").value.trim())send()}
+  };
+  rec.onerror=e=>{
+    voiceTurn=false;
+    say(e.error==="not-allowed"?"Permite el micrófono en tu navegador para hablar con Aurora.":"No te pude escuchar. Inténtalo otra vez o escribe tu mensaje.");
+  };
+}
+$("#mic").onclick=()=>{
+  if(!rec)return;
+  if(listening){rec.stop();return}
+  voiceTurn=true;base=$("#in").value?$("#in").value+" ":"";say("");
+  if("speechSynthesis" in window)speechSynthesis.cancel();
+  try{rec.start()}catch(e){voiceTurn=false}
+};
+
+function speak(t){
+  if(!("speechSynthesis" in window))return;
+  const u=new SpeechSynthesisUtterance(t);u.lang="es-ES";
+  u.onstart=()=>{speaking=true;orb()};
+  u.onend=u.onerror=()=>{speaking=false;orb()};
+  speechSynthesis.cancel();speechSynthesis.speak(u);
+}
+
+async function send(){
+  const t=$("#in").value.trim();
+  if(!t||busy)return;
+  if(!key){$("#setup").hidden=false;say("Primero guarda tu clave de API.");return}
+  $("#in").value="";base="";say("");
+  if("speechSynthesis" in window)speechSynthesis.cancel();
+  add("me",t);hist.push({role:"user",content:t});
+  const b=add("ai","…");busy=true;orb();$("#send").disabled=true;
+  let msgs=hist.slice(-12);
+  while(msgs.length&&msgs[0].role!=="user")msgs.shift();
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "content-type":"application/json",
+        "x-api-key":key,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body:JSON.stringify({model:MODEL,max_tokens:1000,system:INSTR,messages:msgs})
+    });
+    const data=await r.json();
+    if(!r.ok){
+      const err=new Error(data&&data.error&&data.error.message||"Error");err.status=r.status;throw err;
+    }
+    const out=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("").trim();
+    b.textContent=out;hist.push({role:"assistant",content:out});
+    if($("#spk").checked)speak(out);
+  }catch(e){
+    hist.pop();
+    b.textContent="No pude responder esta vez.";
+    if(e.status===401)say("La clave de API no es válida. Toca “Cambiar clave de API” y pega una nueva.");
+    else if(e.status===429)say("Demasiados mensajes seguidos. Espera un momento.");
+    else if(e.status===400&&/credit/i.test(e.message))say("Tu cuenta de Anthropic no tiene saldo. Agrégalo en console.anthropic.com.");
+    else say("Ocurrió un error de conexión. Revisa tu internet e inténtalo otra vez.");
+  }finally{busy=false;orb();$("#send").disabled=false}
+}
+$("#f").onsubmit=e=>{e.preventDefault();send()};
+$("#in").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});
+$("#in").addEventListener("input",e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px"});
+</script>
+</body>
+</html>
